@@ -2,84 +2,70 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 
-// ── Ticker universe for autocomplete ──────────────────────────
-const TICKERS = [
-  { symbol: "AAPL", name: "Apple Inc." },
-  { symbol: "MSFT", name: "Microsoft Corporation" },
-  { symbol: "NVDA", name: "NVIDIA Corporation" },
-  { symbol: "GOOGL", name: "Alphabet Inc." },
-  { symbol: "AMZN", name: "Amazon.com Inc." },
-  { symbol: "META", name: "Meta Platforms Inc." },
-  { symbol: "TSLA", name: "Tesla Inc." },
-  { symbol: "BRK-B", name: "Berkshire Hathaway Inc." },
-  { symbol: "JPM", name: "JPMorgan Chase & Co." },
-  { symbol: "V", name: "Visa Inc." },
-  { symbol: "JNJ", name: "Johnson & Johnson" },
-  { symbol: "WMT", name: "Walmart Inc." },
-  { symbol: "PG", name: "Procter & Gamble Co." },
-  { symbol: "MA", name: "Mastercard Inc." },
-  { symbol: "UNH", name: "UnitedHealth Group Inc." },
-  { symbol: "HD", name: "Home Depot Inc." },
-  { symbol: "DIS", name: "Walt Disney Co." },
-  { symbol: "NFLX", name: "Netflix Inc." },
-  { symbol: "ADBE", name: "Adobe Inc." },
-  { symbol: "CRM", name: "Salesforce Inc." },
-  { symbol: "AMD", name: "Advanced Micro Devices Inc." },
-  { symbol: "INTC", name: "Intel Corporation" },
-  { symbol: "PYPL", name: "PayPal Holdings Inc." },
-  { symbol: "CSCO", name: "Cisco Systems Inc." },
-  { symbol: "PEP", name: "PepsiCo Inc." },
-  { symbol: "KO", name: "Coca-Cola Co." },
-  { symbol: "COST", name: "Costco Wholesale Corp." },
-  { symbol: "AVGO", name: "Broadcom Inc." },
-  { symbol: "TMO", name: "Thermo Fisher Scientific" },
-  { symbol: "MRK", name: "Merck & Co. Inc." },
-  { symbol: "ABT", name: "Abbott Laboratories" },
-  { symbol: "NKE", name: "Nike Inc." },
-  { symbol: "ORCL", name: "Oracle Corporation" },
-  { symbol: "ACN", name: "Accenture plc" },
-  { symbol: "BA", name: "Boeing Co." },
-  { symbol: "RELIANCE.NS", name: "Reliance Industries Ltd." },
-  { symbol: "TCS.NS", name: "Tata Consultancy Services" },
-  { symbol: "INFY.NS", name: "Infosys Ltd." },
-  { symbol: "HDFCBANK.NS", name: "HDFC Bank Ltd." },
-  { symbol: "ITC.NS", name: "ITC Ltd." },
-  { symbol: "ZOMATO.NS", name: "Zomato Ltd." },
-  { symbol: "WIPRO.NS", name: "Wipro Ltd." },
-  { symbol: "TATAMOTORS.NS", name: "Tata Motors Ltd." },
-  { symbol: "SBIN.NS", name: "State Bank of India" },
-  { symbol: "BAJFINANCE.NS", name: "Bajaj Finance Ltd." },
-];
-
-function fuzzyMatch(query: string, symbol: string, name: string): boolean {
-  const combined = `${symbol} ${name}`.toLowerCase();
-  const words = query.toLowerCase().trim().split(/\s+/);
-  return words.every((word) => combined.includes(word));
+interface SearchResult {
+  ticker: string;
+  name: string;
+  exchange: string;
+  flag: string;
 }
 
 export default function SearchBar() {
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(-1);
   const [isOpen, setIsOpen] = useState(false);
+  const [noResults, setNoResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Filter results based on fuzzy multi-word matching
-  const results =
-    query.trim().length > 0
-      ? TICKERS.filter((t) => fuzzyMatch(query, t.symbol, t.name)).slice(0, 8)
-      : [];
+  // Debounced live search
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed.length < 1) {
+      setResults([]);
+      setNoResults(false);
+      setSearching(false);
+      return;
+    }
 
-  const showDropdown = isOpen && results.length > 0;
+    setSearching(true);
+    setNoResults(false);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/search?q=${encodeURIComponent(trimmed)}`
+        );
+        const data = await res.json();
+        const items: SearchResult[] = data.results || [];
+        setResults(items);
+        setNoResults(items.length === 0 && trimmed.length > 0);
+        setIsOpen(true);
+      } catch {
+        setResults([]);
+        setNoResults(true);
+      } finally {
+        setSearching(false);
+      }
+    }, 180);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const showDropdown =
+    isOpen && (results.length > 0 || noResults || searching);
 
   function navigate(symbol: string) {
     setQuery("");
+    setResults([]);
     setIsOpen(false);
     setError(null);
+    setNoResults(false);
     router.push(`/company/${encodeURIComponent(symbol)}`);
   }
 
@@ -90,25 +76,18 @@ export default function SearchBar() {
       setError("Enter a ticker symbol or company name");
       return;
     }
-    // If there's a highlighted result, use that
     if (highlightIdx >= 0 && highlightIdx < results.length) {
-      navigate(results[highlightIdx].symbol);
+      navigate(results[highlightIdx].ticker);
       return;
     }
-    // If the query matches a known ticker exactly, use it
-    const exact = TICKERS.find(
-      (t) => t.symbol.toUpperCase() === clean
-    );
-    if (exact) {
-      navigate(exact.symbol);
-      return;
-    }
-    // If there's exactly one result, use it
     if (results.length === 1) {
-      navigate(results[0].symbol);
+      navigate(results[0].ticker);
       return;
     }
-    // Otherwise treat the raw input as a ticker symbol
+    if (results.length > 0) {
+      navigate(results[0].ticker);
+      return;
+    }
     if (clean.length > 10) {
       setError("Ticker symbol must be 10 characters or less");
       return;
@@ -128,13 +107,10 @@ export default function SearchBar() {
       setHighlightIdx((prev) =>
         prev > 0 ? prev - 1 : results.length - 1
       );
-    } else if (e.key === "Enter") {
-      // Let form submit handle it
     } else if (e.key === "Escape") {
       setIsOpen(false);
       setHighlightIdx(-1);
     }
-    // All other keys including Space — do nothing, let default input behavior run
   }
 
   function handleChange(value: string) {
@@ -144,7 +120,6 @@ export default function SearchBar() {
     if (error) setError(null);
   }
 
-  // Close dropdown on outside click
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (
       listRef.current &&
@@ -171,7 +146,11 @@ export default function SearchBar() {
               : "focus-within:border-accent/40 focus-within:ring-accent/40"
           }`}
         >
-          <Search className="h-4 w-4 shrink-0 text-text-muted" />
+          {searching ? (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-accent" />
+          ) : (
+            <Search className="h-4 w-4 shrink-0 text-text-muted" />
+          )}
           <input
             ref={inputRef}
             type="text"
@@ -195,10 +174,18 @@ export default function SearchBar() {
           ref={listRef}
           className="glass-dropdown absolute left-0 right-0 z-20 mt-2 overflow-hidden"
         >
+          {/* Loading state */}
+          {searching && results.length === 0 && (
+            <div className="px-4 py-3">
+              <p className="text-xs text-accent/70">Searching...</p>
+            </div>
+          )}
+
+          {/* Results */}
           {results.map((item, i) => (
             <button
-              key={item.symbol}
-              onClick={() => navigate(item.symbol)}
+              key={item.ticker}
+              onClick={() => navigate(item.ticker)}
               onMouseEnter={() => setHighlightIdx(i)}
               className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                 i === highlightIdx
@@ -206,20 +193,43 @@ export default function SearchBar() {
                   : "hover:bg-white/[0.03]"
               }`}
             >
+              <span className="text-sm">{item.flag}</span>
               <span className="font-mono text-sm font-medium text-accent">
-                {item.symbol}
+                {item.ticker}
               </span>
-              <span className="truncate text-sm text-text-muted">
+              <span className="flex-1 truncate text-sm text-text-muted">
                 {item.name}
+              </span>
+              <span className="text-[10px] text-text-muted/50">
+                {item.exchange}
               </span>
             </button>
           ))}
+
+          {/* No results */}
+          {noResults && !searching && (
+            <div className="px-4 py-3">
+              <p className="text-xs text-text-muted">
+                No matches for &ldquo;{query.trim()}&rdquo;. Try a different
+                spelling or the exact ticker.
+              </p>
+            </div>
+          )}
+
+          {/* Result count when done */}
+          {!searching && results.length > 0 && (
+            <div className="border-t border-white/[0.04] px-4 py-1.5">
+              <p className="text-[10px] text-text-muted/40">
+                {results.length} match{results.length !== 1 ? "es" : ""}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Quick-access chips */}
+      {/* Trending chips */}
       <div className="mt-4 flex flex-wrap justify-center gap-2">
-        {["AAPL", "MSFT", "NVDA", "RELIANCE.NS", "TCS.NS", "ZOMATO.NS"].map(
+        {["AAPL", "NVDA", "RELIANCE.NS", "TSLA", "TCS.NS", "META"].map(
           (sym) => (
             <button
               key={sym}

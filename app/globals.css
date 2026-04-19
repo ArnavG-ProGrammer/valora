@@ -165,6 +165,13 @@ body {
   animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Cursor ripple */
+@keyframes ripple {
+  0% { width: 8px; height: 8px; opacity: 0.5; }
+  40% { opacity: 0.4; }
+  100% { width: 120px; height: 120px; opacity: 0; }
+}
+
 /* Ambient orb drift */
 @keyframes drift1 {
   0%, 100% { transform: translate(0, 0); }

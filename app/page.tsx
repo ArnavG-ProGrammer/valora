@@ -1,8 +1,10 @@
 import SearchBar from "@/components/SearchBar";
+import CursorRipple from "@/components/CursorRipple";
 
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4">
+      <CursorRipple />
       <div className="flex w-full max-w-lg flex-col items-center text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
