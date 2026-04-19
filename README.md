@@ -30,7 +30,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Required | Description |
 |---|---|---|
-| `GOOGLE_API_KEY` | Yes | Google AI API key for memo generation |
+| `GEMINI_API_KEY` | Yes | Google Gemini API key for memo generation |
 
 ## Stack
 
@@ -38,7 +38,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
 - **Data**: yahoo-finance2
-- **AI**: Google Gemini (gemini-2.0-flash)
+- **AI**: Google Gemini (gemini-2.5-flash)
 - **Validation**: Zod v4
 - **Charts**: Recharts
 - **Testing**: Vitest
