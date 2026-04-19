@@ -37,13 +37,20 @@ The JSON schema you must return:
   "verdictNarrative": "2-3 sentences explaining the verdict using actual scores"
 }`;
 
-// ── Client (reads GOOGLE_API_KEY from env) ─────────────────────
-if (!process.env.GOOGLE_API_KEY) {
-  throw new Error(
-    "Missing GOOGLE_API_KEY environment variable. Add it to .env.local or your Vercel project settings."
-  );
+// ── Client (reads GOOGLE_API_KEY from env, lazy init) ──────────
+let _genAI: GoogleGenerativeAI | null = null;
+
+function getClient(): GoogleGenerativeAI {
+  if (!_genAI) {
+    if (!process.env.GOOGLE_API_KEY) {
+      throw new Error(
+        "Missing GOOGLE_API_KEY environment variable. Add it to .env.local or your Vercel project settings."
+      );
+    }
+    _genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+  }
+  return _genAI;
 }
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 function buildUserMessage(data: CompanyData, analysis: AnalysisResult): string {
   // Strip history array to save tokens — the LLM doesn't need 250 daily prices
@@ -80,7 +87,7 @@ export async function generateMemo(
   analysis: AnalysisResult
 ): Promise<Memo> {
   const userMessage = buildUserMessage(data, analysis);
-  const model = genAI.getGenerativeModel({
+  const model = getClient().getGenerativeModel({
     model: "gemini-2.0-flash",
     systemInstruction: SYSTEM_PROMPT,
   });
