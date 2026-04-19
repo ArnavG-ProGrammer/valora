@@ -30,7 +30,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 | Variable | Required | Description |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Yes | Anthropic API key for memo generation |
+| `GOOGLE_API_KEY` | Yes | Google AI API key for memo generation |
 
 ## Stack
 
@@ -38,7 +38,7 @@ Open [http://localhost:3000](http://localhost:3000).
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
 - **Data**: yahoo-finance2
-- **AI**: Anthropic Claude (claude-sonnet-4-5-20250514)
+- **AI**: Google Gemini (gemini-2.0-flash)
 - **Validation**: Zod v4
 - **Charts**: Recharts
 - **Testing**: Vitest

@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { z } from "zod";
 import type { CompanyData, AnalysisResult } from "@/lib/types";
 
@@ -37,13 +37,13 @@ The JSON schema you must return:
   "verdictNarrative": "2-3 sentences explaining the verdict using actual scores"
 }`;
 
-// ── Client (reads ANTHROPIC_API_KEY from env) ──────────────────
-if (!process.env.ANTHROPIC_API_KEY) {
+// ── Client (reads GOOGLE_API_KEY from env) ─────────────────────
+if (!process.env.GOOGLE_API_KEY) {
   throw new Error(
-    "Missing ANTHROPIC_API_KEY environment variable. Add it to .env.local or your Vercel project settings."
+    "Missing GOOGLE_API_KEY environment variable. Add it to .env.local or your Vercel project settings."
   );
 }
-const anthropic = new Anthropic();
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 function buildUserMessage(data: CompanyData, analysis: AnalysisResult): string {
   // Strip history array to save tokens — the LLM doesn't need 250 daily prices
@@ -80,45 +80,29 @@ export async function generateMemo(
   analysis: AnalysisResult
 ): Promise<Memo> {
   const userMessage = buildUserMessage(data, analysis);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    systemInstruction: SYSTEM_PROMPT,
+  });
 
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    const messages: Anthropic.MessageParam[] = [
-      { role: "user", content: userMessage },
-    ];
+    const prompt =
+      attempt === 0
+        ? userMessage
+        : `${userMessage}\n\nIMPORTANT: Return ONLY valid JSON matching the schema. No markdown, no explanation, no code fences. Just the raw JSON object.`;
 
-    // On retry, add a reminder
-    if (attempt > 0) {
-      messages.push(
-        {
-          role: "assistant",
-          content: "I apologize for the formatting error. Here is the corrected JSON:",
-        },
-        {
-          role: "user",
-          content:
-            "Return ONLY valid JSON matching the schema. No markdown, no explanation, no code fences. Just the raw JSON object.",
-        }
-      );
-    }
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-5-20250514",
-      max_tokens: 2048,
-      system: SYSTEM_PROMPT,
-      messages,
-    });
-
-    // Extract text from response
-    const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
+    if (!text) {
       lastError = new Error("No text content in model response");
       continue;
     }
 
     try {
-      const parsed = extractJSON(textBlock.text);
+      const parsed = extractJSON(text);
       const memo = MemoSchema.parse(parsed);
       return memo;
     } catch (err) {
