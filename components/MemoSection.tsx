@@ -14,7 +14,7 @@ export default function MemoSection({ memo }: { memo: Memo }) {
     <div className="mx-auto max-w-[680px]">
       {SECTIONS.map(({ key, title }, i) => (
         <div key={key}>
-          {i > 0 && <hr className="my-6 border-border" />}
+          {i > 0 && <hr className="my-6 border-white/[0.06]" />}
           <h3 className="mb-3 text-xs font-medium uppercase tracking-[0.15em] text-text-muted">
             {title}
           </h3>

@@ -16,7 +16,6 @@ function scoreLabel(type: "growth" | "risk" | "valuation", score: number | null)
     if (score >= 35) return "Moderate Risk";
     return "Low Risk";
   }
-  // valuation
   if (score <= 25) return "Undervalued";
   if (score <= 50) return "Fairly Valued";
   if (score <= 75) return "Overvalued";
@@ -34,7 +33,6 @@ function barColor(type: "growth" | "risk" | "valuation", score: number): string 
     if (score >= 35) return "bg-warning";
     return "bg-success";
   }
-  // valuation: low = green (cheap), high = red (expensive)
   if (score <= 30) return "bg-success";
   if (score <= 55) return "bg-accent";
   return "bg-danger";
@@ -64,8 +62,8 @@ function ScoreCard({
   const label = scoreLabel(type, score);
 
   return (
-    <div className="relative rounded-lg border border-border bg-surface p-4">
-      <div className="flex items-center justify-between">
+    <div className="glass-card-interactive relative p-4">
+      <div className="relative z-10 flex items-center justify-between">
         <p className="text-xs uppercase tracking-wider text-text-muted">
           {title}
         </p>
@@ -79,13 +77,12 @@ function ScoreCard({
         </button>
       </div>
 
-      <p className="mt-2 font-mono text-3xl font-semibold text-text">
+      <p className="relative z-10 mt-2 font-mono text-3xl font-semibold text-text">
         {score != null ? score : "—"}
         <span className="text-base text-text-muted">/100</span>
       </p>
 
-      {/* Bar */}
-      <div className="mt-2 h-1.5 w-full rounded-full bg-surface-light">
+      <div className="relative z-10 mt-2 h-1.5 w-full rounded-full bg-white/[0.04]">
         {score != null && (
           <div
             className={`h-full rounded-full ${barColor(type, score)}`}
@@ -94,11 +91,10 @@ function ScoreCard({
         )}
       </div>
 
-      <p className="mt-2 text-xs text-text-muted">{label}</p>
+      <p className="relative z-10 mt-2 text-xs text-text-muted">{label}</p>
 
-      {/* Breakdown tooltip */}
       {showBreakdown && breakdownLines.length > 0 && (
-        <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-lg border border-border bg-surface-light p-3 shadow-xl">
+        <div className="glass-tooltip absolute left-0 top-full z-20 mt-1 w-full p-3">
           {breakdownLines.map((line, i) => (
             <p key={i} className="font-mono text-xs text-text-muted">
               {line}

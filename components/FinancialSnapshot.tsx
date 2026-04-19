@@ -26,15 +26,15 @@ function StatCard({
 }) {
   const isMissing = value === "—";
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <p className="text-xs uppercase tracking-wider text-text-muted">{label}</p>
+    <div className="glass-card-interactive p-4">
+      <p className="relative z-10 text-xs uppercase tracking-wider text-text-muted">{label}</p>
       <p
-        className={`mt-1 font-mono text-xl font-semibold ${isMissing ? "text-text-muted" : "text-text"}`}
+        className={`relative z-10 mt-1 font-mono text-xl font-semibold ${isMissing ? "text-text-muted" : "text-text"}`}
       >
         {value}
       </p>
       {sub != null && (
-        <p className="mt-0.5 font-mono text-xs text-text-muted">{sub}</p>
+        <p className="relative z-10 mt-0.5 font-mono text-xs text-text-muted">{sub}</p>
       )}
     </div>
   );

@@ -7,11 +7,11 @@ const callColors: Record<VerdictResult["call"], string> = {
   Avoid: "text-danger",
 };
 
-const callBorderColors: Record<VerdictResult["call"], string> = {
-  Buy: "border-success",
-  Hold: "border-warning",
-  Watch: "border-watch",
-  Avoid: "border-danger",
+const callBorderAccent: Record<VerdictResult["call"], string> = {
+  Buy: "rgba(124, 232, 168, 0.2)",
+  Hold: "rgba(232, 212, 124, 0.2)",
+  Watch: "rgba(232, 168, 124, 0.2)",
+  Avoid: "rgba(232, 124, 124, 0.2)",
 };
 
 const confidenceBg: Record<VerdictResult["confidence"], string> = {
@@ -23,9 +23,10 @@ const confidenceBg: Record<VerdictResult["confidence"], string> = {
 export default function Verdict({ verdict }: { verdict: VerdictResult }) {
   return (
     <div
-      className={`rounded-lg border bg-surface p-6 ${callBorderColors[verdict.call]}`}
+      className="glass-card p-6"
+      style={{ borderColor: callBorderAccent[verdict.call] }}
     >
-      <div className="flex items-center gap-4">
+      <div className="relative z-10 flex items-center gap-4">
         <span
           className={`font-mono text-4xl font-bold ${callColors[verdict.call]}`}
         >
@@ -39,7 +40,7 @@ export default function Verdict({ verdict }: { verdict: VerdictResult }) {
       </div>
 
       {verdict.reasoning.length > 0 && (
-        <ul className="mt-4 space-y-1.5">
+        <ul className="relative z-10 mt-4 space-y-1.5">
           {verdict.reasoning.map((r, i) => (
             <li key={i} className="flex gap-2 text-sm text-text-muted">
               <span className="shrink-0 text-text-muted">•</span>

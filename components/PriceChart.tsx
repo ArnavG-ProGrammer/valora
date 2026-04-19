@@ -27,7 +27,7 @@ function CustomTooltip({
   if (!active || !payload?.length) return null;
   const point = payload[0].payload;
   return (
-    <div className="rounded border border-border bg-surface px-3 py-2 shadow-lg">
+    <div className="glass-tooltip px-3 py-2">
       <p className="text-xs text-text-muted">{point.date}</p>
       <p className="font-mono text-sm font-semibold text-text">
         ${point.close.toFixed(2)}
@@ -39,54 +39,55 @@ function CustomTooltip({
 export default function PriceChart({ history }: { history: HistoryPoint[] }) {
   if (history.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-lg border border-border bg-surface">
-        <p className="text-sm text-text-muted">Price history unavailable</p>
+      <div className="glass-card flex h-64 items-center justify-center">
+        <p className="relative z-10 text-sm text-text-muted">Price history unavailable</p>
       </div>
     );
   }
 
-  // Thin the data for x-axis labels — show ~6 ticks
   const tickInterval = Math.max(Math.floor(history.length / 6), 1);
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <p className="mb-3 text-xs uppercase tracking-wider text-text-muted">
+    <div className="glass-card p-4">
+      <p className="relative z-10 mb-3 text-xs uppercase tracking-wider text-text-muted">
         1Y Price History
       </p>
-      <ResponsiveContainer width="100%" height={280}>
-        <LineChart data={history}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="#1E1E22"
-            vertical={false}
-          />
-          <XAxis
-            dataKey="date"
-            tickFormatter={formatDateShort}
-            interval={tickInterval}
-            tick={{ fill: "#6B6B70", fontSize: 11 }}
-            axisLine={{ stroke: "#1E1E22" }}
-            tickLine={false}
-          />
-          <YAxis
-            domain={["dataMin", "dataMax"]}
-            tick={{ fill: "#6B6B70", fontSize: 11 }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(v: number) => `$${v.toFixed(0)}`}
-            width={55}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Line
-            type="monotone"
-            dataKey="close"
-            stroke="#E8A87C"
-            strokeWidth={1.5}
-            dot={false}
-            activeDot={{ r: 3, fill: "#E8A87C", stroke: "#0A0A0B", strokeWidth: 2 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <div className="relative z-10">
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={history}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="rgba(255,255,255,0.04)"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="date"
+              tickFormatter={formatDateShort}
+              interval={tickInterval}
+              tick={{ fill: "#6B6B70", fontSize: 11 }}
+              axisLine={{ stroke: "rgba(255,255,255,0.06)" }}
+              tickLine={false}
+            />
+            <YAxis
+              domain={["dataMin", "dataMax"]}
+              tick={{ fill: "#6B6B70", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v: number) => `$${v.toFixed(0)}`}
+              width={55}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Line
+              type="monotone"
+              dataKey="close"
+              stroke="#E8A87C"
+              strokeWidth={1.5}
+              dot={false}
+              activeDot={{ r: 3, fill: "#E8A87C", stroke: "#0A0A0B", strokeWidth: 2 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

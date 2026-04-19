@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: "/api/",
     },
-    sitemap: "https://valora.vercel.app/sitemap.xml",
+    sitemap: "https://valora-eta.vercel.app/sitemap.xml",
   };
 }

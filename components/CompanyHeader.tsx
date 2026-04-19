@@ -17,24 +17,21 @@ export default function CompanyHeader({ data }: { data: CompanyData }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Top row: ticker + exchange */}
       <div className="flex items-center gap-3">
         <span className="font-mono text-3xl font-semibold text-text">
           {identity.ticker}
         </span>
         {identity.exchange && (
-          <span className="rounded border border-border bg-surface-light px-2 py-0.5 font-mono text-xs text-text-muted">
+          <span className="glass-pill font-mono text-xs text-text-muted !py-1 !px-2.5">
             {identity.exchange}
           </span>
         )}
       </div>
 
-      {/* Company name */}
       <h1 className="text-lg font-medium text-text">
         {identity.name ?? "—"}
       </h1>
 
-      {/* Price row */}
       <div className="flex items-baseline gap-4">
         <span className="font-mono text-4xl font-semibold text-text">
           {price.current != null
@@ -49,15 +46,14 @@ export default function CompanyHeader({ data }: { data: CompanyData }) {
         )}
       </div>
 
-      {/* Tags row */}
       <div className="flex flex-wrap items-center gap-2">
         {identity.sector && (
-          <span className="rounded bg-surface-light px-2 py-0.5 text-xs text-text-muted">
+          <span className="glass-pill !py-1 !px-2.5 text-xs text-text-muted">
             {identity.sector}
           </span>
         )}
         {identity.industry && (
-          <span className="rounded bg-surface-light px-2 py-0.5 text-xs text-text-muted">
+          <span className="glass-pill !py-1 !px-2.5 text-xs text-text-muted">
             {identity.industry}
           </span>
         )}
