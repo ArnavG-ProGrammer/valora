@@ -1,0 +1,282 @@
+import { Suspense } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { fetchCompany } from "@/lib/data/fetchCompany";
+import { runAnalysis } from "@/lib/analysis/score";
+import { generateMemo } from "@/lib/ai/generateMemo";
+import CompanyHeader from "@/components/CompanyHeader";
+import FinancialSnapshot from "@/components/FinancialSnapshot";
+import PriceChart from "@/components/PriceChart";
+import ScoreCards from "@/components/ScoreCards";
+import MemoSection from "@/components/MemoSection";
+import Verdict from "@/components/Verdict";
+import {
+  TickerNotFoundError,
+  RateLimitError,
+} from "@/lib/types";
+
+function LoadingSkeleton() {
+  return (
+    <div className="mx-auto w-full max-w-4xl px-4 py-12">
+      <div className="space-y-6">
+        {/* Back link */}
+        <div className="skeleton h-4 w-24" />
+
+        {/* Header: ticker + exchange */}
+        <div className="flex items-center gap-3">
+          <div className="skeleton h-9 w-32" />
+          <div className="skeleton h-6 w-16" />
+        </div>
+        {/* Company name */}
+        <div className="skeleton h-5 w-56" />
+        {/* Price */}
+        <div className="flex items-baseline gap-4">
+          <div className="skeleton h-12 w-44" />
+          <div className="skeleton h-5 w-28" />
+        </div>
+        {/* Tags */}
+        <div className="flex gap-2">
+          <div className="skeleton h-5 w-20" />
+          <div className="skeleton h-5 w-32" />
+          <div className="skeleton h-5 w-24" />
+        </div>
+
+        {/* Financial snapshot: 4 cards */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-lg border border-border bg-surface p-4">
+              <div className="skeleton h-3 w-20" />
+              <div className="skeleton mt-2 h-7 w-28" />
+              <div className="skeleton mt-1 h-3 w-16" />
+            </div>
+          ))}
+        </div>
+
+        {/* Chart */}
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <div className="skeleton h-3 w-32" />
+          <div className="skeleton mt-3 h-64 w-full" />
+        </div>
+
+        {/* Score cards: 3 */}
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-lg border border-border bg-surface p-4">
+              <div className="skeleton h-3 w-16" />
+              <div className="skeleton mt-2 h-9 w-20" />
+              <div className="skeleton mt-2 h-1.5 w-full" />
+              <div className="skeleton mt-2 h-3 w-24" />
+            </div>
+          ))}
+        </div>
+
+        {/* Memo sections */}
+        <div className="mx-auto max-w-[680px] space-y-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i}>
+              <div className="skeleton h-3 w-28" />
+              <div className="skeleton mt-3 h-4 w-full" />
+              <div className="skeleton mt-2 h-4 w-11/12" />
+              <div className="skeleton mt-2 h-4 w-3/4" />
+            </div>
+          ))}
+        </div>
+
+        {/* Verdict */}
+        <div className="rounded-lg border border-border bg-surface p-6">
+          <div className="flex items-center gap-4">
+            <div className="skeleton h-10 w-24" />
+            <div className="skeleton h-6 w-32 rounded-full" />
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="skeleton h-3 w-full" />
+            <div className="skeleton h-3 w-5/6" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ErrorBlock({
+  title,
+  message,
+  ticker,
+}: {
+  title: string;
+  message: string;
+  ticker?: string;
+}) {
+  return (
+    <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-4 py-24 text-center">
+      <p className="text-lg font-medium text-danger">{title}</p>
+      <p className="mt-2 max-w-md text-sm text-text-muted">{message}</p>
+      <div className="mt-6 flex gap-4">
+        {ticker && (
+          <Link
+            href={`/company/${encodeURIComponent(ticker)}`}
+            className="rounded-md border border-border bg-surface px-4 py-2 text-sm text-accent transition-colors hover:bg-surface-light"
+          >
+            Retry
+          </Link>
+        )}
+        <Link
+          href="/"
+          className="flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-2 text-sm text-text-muted transition-colors hover:bg-surface-light"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to search
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function FreshnessIndicator({ fetchedAt, hasMemo }: { fetchedAt: string; hasMemo: boolean }) {
+  const fetchedDate = new Date(fetchedAt);
+  const now = new Date();
+  const diffMs = now.getTime() - fetchedDate.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+
+  let agoStr: string;
+  if (diffMin < 1) agoStr = "just now";
+  else if (diffMin === 1) agoStr = "1 minute ago";
+  else if (diffMin < 60) agoStr = `${diffMin} minutes ago`;
+  else agoStr = `${Math.floor(diffMin / 60)}h ${diffMin % 60}m ago`;
+
+  return (
+    <p className="mt-8 text-center font-mono text-xs text-text-muted">
+      Data fetched {agoStr} from Yahoo Finance.{" "}
+      {hasMemo
+        ? "Memo generated by Claude. "
+        : ""}
+      Analysis scores are deterministic.
+    </p>
+  );
+}
+
+async function MemoContent({ ticker }: { ticker: string }) {
+  try {
+    const data = await fetchCompany(ticker);
+    const analysis = runAnalysis(data);
+
+    const hasHistory = data.history.length > 0;
+    const hasIncomeStatements = data.statements.income.length > 0;
+
+    // If no income statements, force verdict confidence to Low
+    if (!hasIncomeStatements && analysis.verdict.confidence !== "Low") {
+      analysis.verdict.confidence = "Low";
+      analysis.verdict.reasoning.push(
+        "Confidence capped at Low: no income statement history available"
+      );
+    }
+
+    let memo;
+    try {
+      memo = await generateMemo(data, analysis);
+    } catch {
+      memo = null;
+    }
+
+    return (
+      <div className="mx-auto w-full max-w-4xl px-4 py-8">
+        <Link
+          href="/"
+          className="mb-6 inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-accent"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          New search
+        </Link>
+
+        <CompanyHeader data={data} />
+
+        <div className="mt-8">
+          <FinancialSnapshot data={data} analysis={analysis} />
+        </div>
+
+        {hasHistory ? (
+          <div className="mt-6">
+            <PriceChart history={data.history} />
+          </div>
+        ) : (
+          <div className="mt-6 flex h-32 items-center justify-center rounded-lg border border-border bg-surface">
+            <p className="text-sm text-text-muted">
+              Price history unavailable for this ticker
+            </p>
+          </div>
+        )}
+
+        <div className="mt-6">
+          <ScoreCards
+            growth={hasIncomeStatements ? analysis.growth : { ...analysis.growth, score: null }}
+            risk={analysis.risk}
+            valuation={analysis.valuation}
+          />
+        </div>
+
+        {memo && (
+          <div className="mt-10">
+            <h2 className="mb-6 text-center text-xs font-medium uppercase tracking-[0.2em] text-text-muted">
+              Investment Memo
+            </h2>
+            <MemoSection memo={memo} />
+          </div>
+        )}
+
+        {!memo && (
+          <div className="mt-10 rounded-lg border border-border bg-surface p-6 text-center">
+            <p className="text-sm text-text-muted">
+              Memo generation unavailable. Set ANTHROPIC_API_KEY in .env.local to
+              enable AI-written analysis.
+            </p>
+          </div>
+        )}
+
+        <div className="mt-8">
+          <Verdict verdict={analysis.verdict} />
+        </div>
+
+        <FreshnessIndicator fetchedAt={data.fetchedAt} hasMemo={memo != null} />
+      </div>
+    );
+  } catch (err) {
+    if (err instanceof TickerNotFoundError) {
+      return (
+        <ErrorBlock
+          title="Ticker Not Found"
+          message={`We couldn't find "${ticker}". Try an exchange suffix like .NS for Indian stocks or check the spelling.`}
+        />
+      );
+    }
+    if (err instanceof RateLimitError) {
+      return (
+        <ErrorBlock
+          title="Rate Limited"
+          message="Yahoo Finance is temporarily throttling requests. Give it a minute and retry."
+          ticker={ticker}
+        />
+      );
+    }
+    return (
+      <ErrorBlock
+        title="Something Went Wrong"
+        message="Something broke on our end. The engineering team has been notified."
+        ticker={ticker}
+      />
+    );
+  }
+}
+
+export default async function CompanyPage({
+  params,
+}: {
+  params: Promise<{ ticker: string }>;
+}) {
+  const { ticker } = await params;
+
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <MemoContent ticker={decodeURIComponent(ticker)} />
+    </Suspense>
+  );
+}

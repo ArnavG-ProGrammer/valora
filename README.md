@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Valora — Investment Memo Engine
 
-## Getting Started
+AI-generated investment memos backed by real financial data. Zero hallucinated numbers.
 
-First, run the development server:
+## What It Does
+
+Enter a ticker symbol and Valora produces a structured investment memo:
+
+1. **Fetches real data** from Yahoo Finance (price, financials, balance sheet, cash flow)
+2. **Runs deterministic analysis** — growth score, risk score, valuation score, and a Buy/Hold/Watch/Avoid verdict. Pure math, no LLM involved
+3. **Generates prose** — Claude writes the memo narrative around pre-computed, locked numbers
+4. **Validates output** — Zod schema ensures the LLM response is structurally correct
+
+The LLM never invents a number. Every figure in the memo traces back to Yahoo Finance data or deterministic calculations.
+
+## Run Locally
 
 ```bash
+git clone https://github.com/your-username/valora.git
+cd valora
+npm install
+cp .env.example .env.local
+# Add your Anthropic API key to .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Required | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key for memo generation |
 
-## Learn More
+## Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework**: Next.js 16 (App Router, Turbopack)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **Data**: yahoo-finance2
+- **AI**: Anthropic Claude (claude-sonnet-4-5-20250514)
+- **Validation**: Zod v4
+- **Charts**: Recharts
+- **Testing**: Vitest
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run dev        # Start dev server
+npm run build      # Production build
+npm run test       # Run tests
+npm run lint       # Run ESLint
+```
 
-## Deploy on Vercel
+## Limitations
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Financial data comes from Yahoo Finance and may have delays or gaps, especially for non-US equities
+- The scoring model is opinionated and simplified — it is not investment advice
+- Rate limited to 10 memo requests per minute per IP
+- Indian stocks use `.NS` suffix (e.g., `RELIANCE.NS`)
+- Historical financial statements depend on Yahoo's `fundamentalsTimeSeries` API availability
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT
