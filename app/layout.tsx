@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import Link from "next/link";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -103,6 +104,7 @@ export default function RootLayout({
         </nav>
 
         <main className="relative z-10 flex flex-1 flex-col">{children}</main>
+        <Analytics />
       </body>
     </html>
   );
