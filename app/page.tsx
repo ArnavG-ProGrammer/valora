@@ -23,11 +23,6 @@ export default function Home() {
           <SearchBar />
         </div>
 
-        <p className="mt-3 text-center text-[11px] text-accent/40">
-          Search any global ticker &mdash; US, India, UK, Japan, Europe. Try
-          &lsquo;tata&rsquo; or &lsquo;colgate india&rsquo;.
-        </p>
-
         <p className="mt-8 font-mono text-xs text-text-muted">
           Powered by Yahoo Finance &middot; Analysis by Gemini
         </p>
